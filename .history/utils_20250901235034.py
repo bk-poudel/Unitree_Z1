@@ -134,7 +134,7 @@ def print_model_info(robot):
 
 def get_gravity(robot, q):
     """Computes the gravity vector for a given joint configuration."""
-    return robot.gravity(q)[:6]
+    return robot.computeGeneralizedGravity(q)[:6]
 
 
 def get_jacobian(robot, q):
@@ -189,10 +189,8 @@ def get_states(data):
     return np.array(data.qpos[:6]), np.array(data.qvel[:6])
 
 
-def send_torques(model, data, tau, viewer, gripper=None):
+def send_torques(model, data, tau, viewer):
     data.ctrl[:6] = tau
-    if gripper is not None:
-        data.ctrl[6] = gripper
     mujoco.mj_step(model, data)
     viewer.sync()
 
