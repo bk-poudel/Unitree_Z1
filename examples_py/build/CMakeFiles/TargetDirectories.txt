@@ -1,0 +1,3 @@
+/home/shared/z1_sdk/examples_py/build/CMakeFiles/unitree_arm_interface.dir
+/home/shared/z1_sdk/examples_py/build/CMakeFiles/edit_cache.dir
+/home/shared/z1_sdk/examples_py/build/CMakeFiles/rebuild_cache.dir
