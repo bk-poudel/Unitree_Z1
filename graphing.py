@@ -69,6 +69,10 @@ plt.ylabel("Derived Velocity Value")
 plt.legend()
 plt.savefig("derived_velocities.png")
 plt.show()
+# Print max of derived velocities for each joint
+for i in range(6):
+    max_vel = max(abs(dv[i]) for dv in derived_velocities_all)
+    print(f"Max derived velocity for Joint {i+1}: {max_vel:.4f}")
 # Plot torques
 plt.figure(figsize=(10, 5))
 for i in range(6):
@@ -78,6 +82,10 @@ plt.xlabel("Sample")
 plt.ylabel("Torque Value")
 plt.legend()
 plt.ylim(-3, 3)
-plt.yticks([x * 1 for x in range(-10, 10)])  # ticks from -3 to 3, step 0.5
+plt.yticks([x * 0.5 for x in range(-7, 8)])  # ticks from -3 to 3, step 0.5
 plt.savefig("joint_torques.png")
 plt.show()
+# Print max of torques for each joint
+for i in range(6):
+    max_torque = max(abs(t[i]) for t in torques_all)
+    print(f"Max torque for Joint {i+1}: {max_torque:.4f}")

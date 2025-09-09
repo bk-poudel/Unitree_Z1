@@ -85,30 +85,6 @@ def interpolate_orientations(R_start, R_end, num_steps=100):
 
 
 # ----------------------
-# Smooth gripper transition function
-# ----------------------
-def smooth_gripper_transition(
-    data, q_des, start_pos, end_pos, steps, model, viewer, dt
-):
-    """Smoothly transition gripper position using position control"""
-    for i in range(steps):
-        # Keep arm steady with torque control
-        q, dq = get_states(data)
-        tau_arm = kp * (q_des[:6] - q[:6]) + kd * (np.zeros(6) - dq[:6])
-        data.qfrc_applied[:6] = tau_arm
-        # Smooth gripper position interpolation
-        alpha = i / (steps - 1) if steps > 1 else 0
-        # Use cubic interpolation for smoother motion
-        alpha_smooth = 3 * alpha**2 - 2 * alpha**3
-        gripper_pos = start_pos + alpha_smooth * (end_pos - start_pos)
-        # Apply gripper position control
-        data.qpos[6] = gripper_pos
-        mujoco.mj_step(model, data)
-        viewer.sync()
-        time.sleep(dt)
-
-
-# ----------------------
 # Task-space waypoints with holding positions
 # ----------------------
 q, dq = get_states(data)
@@ -117,23 +93,23 @@ initial_position = initial_pose[:3, 3]
 initial_orientation = initial_pose[:3, :3]
 bottle_pos = np.array([0.42, 0, 0.2])
 glass_pos = np.array([0.4, 0.3, 0.2])
-# Define waypoints with holding positions
+# Define waypoints with holding positions and pouring
 waypoints = [
     # Phase 1: Move to initial position and hold
     initial_position,  # 0: Start position
-    initial_position + np.array([0, 0, 0.2]),  # 1: Move up
+    initial_position + np.array([0, 0, 0.2]),  # 1: Move up (gripper opens here)
     # Phase 2: Move to bottle and hold before grasping
     bottle_pos + np.array([0, 0, 0.2]),  # 2: Above bottle
-    bottle_pos,  # 3: At bottle (gripper opens here at step 2000)
-    bottle_pos,  # 4: Hold at bottle (same position for holding)
-    bottle_pos,  # 5: Still holding at bottle (gripper closes here at step 6000)
+    bottle_pos,  # 3: At bottle
+    # 4: Hold at bottle (same position for holding)
+    bottle_pos,  # 5: Still holding at bottle (gripper closes here)
     # Phase 3: Lift bottle and move to glass
     bottle_pos + np.array([0, 0, 0.2]),  # 6: Lift bottle
     glass_pos + np.array([0, 0, 0.2]),  # 7: Above glass
-    glass_pos,  # 8: At glass for pouring
+    glass_pos,  # 8: At glass
     # Phase 4: Pour and lift back up
-    glass_pos,  # 9: Hold at glass (same position for pouring)
-    glass_pos + np.array([0, 0, 0.2]),  # 10: Lift up after pouring
+    glass_pos,  # 10: Continue pouring
+    glass_pos + np.array([0, 0, 0.2]),  # 11: Lift up after pouring
 ]
 # Define orientations for each waypoint
 rotated_orientation = (
@@ -143,19 +119,20 @@ pour_orientation = initial_orientation @ R.from_euler("x", 0, degrees=True).as_m
 orientations = [
     # Phase 1: Initial orientations
     initial_orientation,  # 0: Start
-    initial_orientation,  # 1: Move up
+    initial_orientation,  # 1: Move up (gripper opens)
     # Phase 2: Approach and grasp bottle
     rotated_orientation,  # 2: Above bottle
     rotated_orientation,  # 3: At bottle
-    rotated_orientation,  # 4: Hold at bottle (gripper opening)
-    rotated_orientation,  # 5: Still holding (gripper closing)
+    # rotated_orientation,  # 4: Hold at bottle
+    rotated_orientation,  # 5: Still holding (gripper closes)
     # Phase 3: Move with bottle
     rotated_orientation,  # 6: Lift bottle
     rotated_orientation,  # 7: Above glass
-    pour_orientation,  # 8: At glass (pour orientation)
+    rotated_orientation,  # 8: At glass (still rotated)
     # Phase 4: Pour and finish
-    pour_orientation,  # 9: Hold at glass (pouring)
-    rotated_orientation,  # 10: Lift up
+    # pour_orientation,  # 9: Hold at glass (change to pour orientation)
+    pour_orientation,  # 10: Continue pouring
+    rotated_orientation,  # 11: Lift up (back to rotated)
 ]
 # ----------------------
 # Interpolate trajectory with different step counts for different phases
@@ -167,11 +144,10 @@ step_counts = [
     2000,
     2000,
     1000,
+    2000,
+    2000,
+    2000,
     1000,
-    1000,
-    2000,
-    2000,
-    2000,
     1000,
     2000,
 ]  # Steps for each segment
@@ -198,15 +174,16 @@ with open("joint_states.csv", "w", newline="") as csvfile:
 step_positions = [0]
 for count in step_counts:
     step_positions.append(step_positions[-1] + count)
-gripper_open_step = step_positions[3]  # At bottle position (step 2000 equivalent)
-gripper_close_step = step_positions[5]  # After holding at bottle (step 6000 equivalent)
+gripper_open_step = step_positions[
+    1
+]  # When moving up from initial position (0.2m above)
+gripper_close_step = step_positions[4]  # After holding at bottle
 print(f"Gripper will open at step: {gripper_open_step}")
 print(f"Gripper will close at step: {gripper_close_step}")
 print(f"Total trajectory steps: {len(trajectory)}")
 # ----------------------
-# Main loop (arm uses torque control, gripper uses position control)
+# Main loop (arm uses torque control, gripper uses smooth position control)
 # ----------------------
-gripper_transition_active = False
 step = 0
 while step < len(trajectory):
     target_pos = trajectory[step]
@@ -222,32 +199,42 @@ while step < len(trajectory):
     # Arm torque control
     tau_arm = kp * (q_des[:6] - q[:6]) + kd * (dq_des - dq[:6])
     data.qfrc_applied[:6] = tau_arm
-    # Handle gripper control
-    if step == gripper_open_step and not gripper_transition_active:
-        print(f"Starting gripper opening at step {step}")
-        gripper_transition_active = True
-        smooth_gripper_transition(data, q_des, 0.0, -1.5, 200, model, viewer, dt)
-        gripper_transition_active = False
-        print("Gripper opening completed")
-    elif step == gripper_close_step and not gripper_transition_active:
-        print(f"Starting gripper closing at step {step}")
-        gripper_transition_active = True
-        smooth_gripper_transition(data, q_des, -1.5, -0.8, 200, model, viewer, dt)
-        gripper_transition_active = False
-        print("Gripper closing completed")
+    # Handle gripper control with smooth continuous transitions
+    if step >= gripper_open_step - 100 and step <= gripper_open_step + 100:
+        # Smooth transition for gripper opening
+        if step <= gripper_open_step:
+            progress = (step - (gripper_open_step - 100)) / 100.0
+        else:
+            progress = 1.0 - (step - gripper_open_step) / 100.0
+            progress = max(0, progress) + 1.0
+        progress = np.clip(progress, 0, 1)
+        # Cubic interpolation for smooth motion
+        alpha_smooth = 3 * progress**2 - 2 * progress**3
+        gripper_target = 0.0 + alpha_smooth * (-1.5)
+    elif step >= gripper_close_step - 100 and step <= gripper_close_step + 100:
+        # Smooth transition for gripper closing
+        if step <= gripper_close_step:
+            progress = (step - (gripper_close_step - 100)) / 100.0
+        else:
+            progress = 1.0 - (step - gripper_close_step) / 100.0
+            progress = max(0, progress) + 1.0
+        progress = np.clip(progress, 0, 1)
+        # Cubic interpolation for smooth motion
+        alpha_smooth = 3 * progress**2 - 2 * progress**3
+        gripper_target = -1.5 + alpha_smooth * (-0.75 + 1.5)
     else:
-        # Normal operation - set gripper position directly
-        if step < gripper_open_step:
+        # Normal operation - set gripper position based on phase
+        if step < gripper_open_step - 100:
             gripper_target = 0.0
-        elif step < gripper_close_step:
+        elif step < gripper_close_step - 100:
             gripper_target = -1.5
         else:
-            gripper_target = -0.8
-        data.qpos[6] = gripper_target
-        # Normal simulation step
-        mujoco.mj_step(model, data)
-        viewer.sync()
-        time.sleep(dt)
+            gripper_target = -0.75
+    data.qpos[6] = gripper_target
+    # Normal simulation step
+    mujoco.mj_step(model, data)
+    viewer.sync()
+    time.sleep(dt)
     step += 1
 print("Simulation completed")
 viewer.close()

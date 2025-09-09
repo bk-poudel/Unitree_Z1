@@ -46,9 +46,9 @@ for i in range(num_trajectory_points):
     )  # set torque
     arm.tau = np.clip(arm.tau, -20, 20)
     arm.gripperQ = trajectory[i, 6]
-    arm.setArmCmd(arm.q, arm.qd, arm.tau)
-    arm.setGripperCmd(arm.gripperQ, arm.gripperQd, arm.gripperTau)
-    arm.sendRecv()  # udp connection
+    # arm.setArmCmd(arm.q, arm.qd, arm.tau)
+    # arm.setGripperCmd(arm.gripperQ, arm.gripperQd, arm.gripperTau)
+    # arm.sendRecv()  # udp connection
     # print(arm.lowstate.getQ())
     time.sleep(arm._ctrlComp.dt)
 arm.loopOn()

@@ -10,10 +10,9 @@ import csv
 # ----------------------
 # Simulation Parameters
 # ----------------------
-dt = 0.001
+dt = 0.002  # simulation timestep
 model = mujoco.MjModel.from_xml_path("./scene.xml")
 data = mujoco.MjData(model)
-# Load robot URDF in Pinocchio
 robot = RobotWrapper.BuildFromURDF(
     "./z1.urdf", "/home/bibek/Unitree_Z1/Unitree_Z1/z1_description/meshes"
 )
@@ -38,7 +37,7 @@ joint_limits = np.array(joint_limits[:6])  # arm joints only
 # ----------------------
 # Torque control gains (for arm only)
 # ----------------------
-kp = np.array([1000, 2000, 1000, 1000, 1000, 1000])
+kp = np.array([1000, 1000, 1000, 1000, 1000, 1000])
 kd = np.array([200, 200, 150, 100, 50, 50])
 
 
