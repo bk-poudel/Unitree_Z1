@@ -1,4 +1,13 @@
 # Unitree Z1 description (MJCF)
+```markdown
+**Project:** Unitree Z1 MJCF Model  
+**Maintainer:** Bibek Poudel <bp2376@nyu.edu>  
+**Quick start:** See `README_MUJOCO.md` for MuJoCo scene usage; install MuJoCo and run `simple_mujoco.py`.  
+**License:** BSD-3-Clause (see LICENSE)  
+
+---
+
+# Unitree Z1 description (MJCF)
 
 > [!IMPORTANT]
 > Requires MuJoCo 2.3.3 or later.
@@ -30,3 +39,5 @@ description](https://github.com/unitreerobotics/unitree_ros/blob/master/robots/z
 ## License
 
 This model is released under a [BSD-3-Clause License](LICENSE).
+
+```

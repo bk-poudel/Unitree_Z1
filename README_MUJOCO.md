@@ -5,6 +5,21 @@ This directory contains simple Python scripts to load and run the Unitree Z1 rob
 ## Files
 
 - `scene.xml` - Main MuJoCo scene file (includes the Z1 robot)
+```markdown
+**Project:** Unitree Z1 MuJoCo Scene Loader  
+**Maintainer:** Bibek Poudel <bp2376@nyu.edu>  
+**Quick start:** Install requirements and run `simple_mujoco.py`.  
+**License:** See repository LICENSE or file headers.  
+
+---
+
+# MuJoCo Scene Loader
+
+This directory contains simple Python scripts to load and run the Unitree Z1 robot simulation using MuJoCo.
+
+## Files
+
+- `scene.xml` - Main MuJoCo scene file (includes the Z1 robot)
 - `z1.xml` - Z1 robot model definition
 - `simple_mujoco.py` - **Recommended** - Minimal script to load and run the scene
 - `requirements.txt` - Python dependencies
@@ -34,7 +49,7 @@ This will:
 - Run a basic simulation
 - Attempt to open a 3D viewer (if available)
 
-### What the scene contains
+## What the scene contains
 
 The `scene.xml` file includes:
 - Unitree Z1 robotic arm (loaded from `z1.xml`)
@@ -93,3 +108,5 @@ You can modify `simple_mujoco.py` to:
 
 - [MuJoCo Python Documentation](https://mujoco.readthedocs.io/en/latest/python.html)
 - [MuJoCo Modeling Guide](https://mujoco.readthedocs.io/en/latest/modeling.html)
+
+````
