@@ -1,5 +1,4 @@
 # Unitree Z1 description (MJCF)
-```markdown
 **Project:** Unitree Z1 MJCF Model  
 **Maintainer:** Bibek Poudel <bp2376@nyu.edu>  
 **Quick start:** See `README_MUJOCO.md` for MuJoCo scene usage; install MuJoCo and run `simple_mujoco.py`.  
